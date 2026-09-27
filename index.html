@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description"
+    content="A refined multi-subject study timer with individual streaks, quick calculator popup, and celebration effects">
+  <title>Study Timer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      /* Deep navy & rich dark graphite atmosphere */
+      background: radial-gradient(ellipse at 50% 15%, #131b2e 0%, #0a0e18 100%);
+      color: #e2e8f0;
+      padding: 24px;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    #petal-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    #confetti-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .timer-card {
+      position: relative;
+      z-index: 2;
+      background: rgba(16, 23, 38, 0.76);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 34px 38px 40px;
+      border-radius: 24px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.04);
+      width: 100%;
+      max-width: 540px;
+      text-align: center;
+    }
+
+    /* Profile & Overall Streak Header */
+    .profile-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .profile-input-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-align: left;
+    }
+
+    .profile-label {
+      font-size: 0.84rem;
+      font-weight: 500;
+      color: #94a3b8;
+    }
+
+    .username-input {
+      background: rgba(9, 13, 22, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 6px 12px;
+      color: #f1f5f9;
+      font-family: inherit;
+      font-size: 0.9rem;
+      width: 125px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .username-input:focus {
+      border-color: rgba(45, 212, 191, 0.45);
+      box-shadow: 0 0 0 2px rgba(45, 212, 191, 0.12);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .overall-streak-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.32);
+      color: #fcd34d;
+      padding: 6px 13px;
+      border-radius: 9999px;
+      font-size: 0.86rem;
+      font-weight: 600;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .tool-icon-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #f1f5f9;
+      border-radius: 9999px;
+      padding: 6px 10px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .tool-icon-btn:hover {
+      background: rgba(45, 212, 191, 0.15);
+      border-color: rgba(45, 212, 191, 0.4);
+      transform: translateY(-1px);
+    }
+
+    /* Subjects Section */
+    .subjects-section {
+      margin-bottom: 22px;
+      text-align: left;
+    }
+
+    .subjects-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .section-title {
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+    }
+
+    .add-subject-form {
+      display: flex;
+      gap: 6px;
+    }
+
+    .new-subject-input {
+      background: rgba(9, 13, 22, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 5px 10px;
+      color: #f1f5f9;
+      font-family: inherit;
+      font-size: 0.82rem;
+      width: 140px;
+      outline: none;
+    }
+
+    .new-subject-input:focus {
+      border-color: rgba(45, 212, 191, 0.4);
+    }
+
+    .add-subject-btn {
+      background: #1e3b39;
+      color: #e6f7f5;
+      border: 1px solid rgba(45, 212, 191, 0.3);
+      border-radius: 8px;
+      padding: 5px 12px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .add-subject-btn:hover {
+      background: #274b48;
+    }
+
+    .subjects-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      max-height: 96px;
+      overflow-y: auto;
+      padding: 2px 0;
+    }
+
+    .subject-chip {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      color: #94a3b8;
+      padding: 6px 13px;
+      border-radius: 9999px;
+      cursor: pointer;
+      font-size: 0.86rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      user-select: none;
+    }
+
+    .subject-chip:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #e2e8f0;
+    }
+
+    .subject-chip.active {
+      background: rgba(45, 212, 191, 0.14);
+      border-color: rgba(45, 212, 191, 0.45);
+      color: #2dd4bf;
+      font-weight: 600;
+      box-shadow: 0 0 14px rgba(45, 212, 191, 0.12);
+    }
+
+    .subject-streak-tag {
+      font-size: 0.78rem;
+      color: #fbbf24;
+      font-weight: 500;
+    }
+
+    .active-subject-banner {
+      font-size: 0.88rem;
+      color: #94a3b8;
+      margin-bottom: 8px;
+    }
+
+    .active-subject-name {
+      color: #2dd4bf;
+      font-weight: 600;
+    }
+
+    h1 {
+      font-size: 1.85rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: #f1f5f9;
+      margin-bottom: 22px;
+    }
+
+    .timer-display {
+      font-size: 3.25rem;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.06em;
+      color: #f8fafc;
+      margin-bottom: 30px;
+      background: rgba(9, 13, 22, 0.85);
+      padding: 20px 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
+    }
+
+    .button-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    button.control-btn {
+      font-family: inherit;
+      font-size: 0.98rem;
+      font-weight: 500;
+      padding: 14px 24px;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    }
+
+    button.control-btn:active {
+      transform: scale(0.97);
+    }
+
+    /* Mature palette */
+    #start-btn {
+      background-color: #1e3b39;
+      color: #e6f7f5;
+      border: 1px solid rgba(45, 212, 191, 0.25);
+    }
+
+    #start-btn:hover {
+      background-color: #274b48;
+      border-color: rgba(45, 212, 191, 0.45);
+      box-shadow: 0 6px 18px rgba(20, 60, 56, 0.4);
+    }
+
+    #pause-btn {
+      background-color: #3d2f21;
+      color: #fef3c7;
+      border: 1px solid rgba(245, 158, 11, 0.25);
+    }
+
+    #pause-btn:hover {
+      background-color: #4f3d2a;
+      border-color: rgba(245, 158, 11, 0.42);
+      box-shadow: 0 6px 18px rgba(61, 47, 33, 0.4);
+    }
+
+    #stop-btn {
+      background-color: #42252c;
+      color: #ffe4e6;
+      border: 1px solid rgba(244, 63, 94, 0.22);
+    }
+
+    #stop-btn:hover {
+      background-color: #552f39;
+      border-color: rgba(244, 63, 94, 0.4);
+      box-shadow: 0 6px 18px rgba(66, 37, 44, 0.4);
+    }
+
+    #restart-btn {
+      background-color: #202736;
+      color: #cbd5e1;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    #restart-btn:hover {
+      background-color: #293245;
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    }
+
+    /* Refined champagne gold achievement banner */
+    .congrats-banner {
+      margin-top: 22px;
+      padding: 16px 24px;
+      background: linear-gradient(135deg, rgba(212, 175, 55, 0.12) 0%, rgba(180, 140, 40, 0.08) 100%);
+      border: 1px solid rgba(212, 175, 55, 0.32);
+      border-radius: 16px;
+      color: #f3e5ab;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      font-weight: 500;
+      font-size: 1.05rem;
+      letter-spacing: 0.01em;
+      box-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.4), 0 0 20px rgba(212, 175, 55, 0.12);
+    }
+
+    .congrats-banner.show {
+      display: flex;
+      animation: elegantPop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .congrats-icon {
+      font-size: 1.35rem;
+      display: inline-block;
+    }
+
+    @keyframes elegantPop {
+      0% {
+        opacity: 0;
+        transform: scale(0.92) translateY(6px);
+      }
+
+      100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    #result {
+      margin-top: 22px;
+      font-size: 0.98rem;
+      font-weight: 400;
+      color: #94a3b8;
+      background-color: rgba(15, 23, 42, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 16px 20px;
+      border-radius: 14px;
+      display: none;
+      line-height: 1.5;
+    }
+
+    #result.active {
+      display: block;
+    }
+
+    /* Calculator Modal / Popup */
+    .calc-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 16px;
+    }
+
+    .calc-modal-overlay.open {
+      display: flex;
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.96);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .calc-card {
+      background: #101726;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 22px;
+      padding: 22px 20px 24px;
+      width: 100%;
+      max-width: 300px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85);
+    }
+
+    .calc-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .calc-title {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .calc-close-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: color 0.2s, background 0.2s;
+    }
+
+    .calc-close-btn:hover {
+      color: #f1f5f9;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .calc-screen {
+      background: #090d16;
+      color: #f8fafc;
+      font-size: 1.85rem;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 16px;
+      min-height: 60px;
+      overflow-x: auto;
+      letter-spacing: 0.04em;
+    }
+
+    .calc-keypad {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .calc-key {
+      font-family: inherit;
+      font-size: 1.1rem;
+      font-weight: 500;
+      padding: 12px 0;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      background: #1a2233;
+      color: #f1f5f9;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    .calc-key:active {
+      transform: scale(0.95);
+    }
+
+    .calc-key:hover {
+      background: #232e44;
+    }
+
+    .calc-key.op {
+      background: #1e3b39;
+      color: #2dd4bf;
+      border-color: rgba(45, 212, 191, 0.25);
+    }
+
+    .calc-key.op:hover {
+      background: #274b48;
+    }
+
+    .calc-key.clear {
+      background: #3d2328;
+      color: #fca5a5;
+      border-color: rgba(244, 63, 94, 0.25);
+    }
+
+    .calc-key.clear:hover {
+      background: #4c2c32;
+    }
+
+    .calc-key.equals {
+      background: #d4af37;
+      color: #090d16;
+      font-weight: 700;
+      border-color: rgba(212, 175, 55, 0.5);
+    }
+
+    .calc-key.equals:hover {
+      background: #e5bf45;
+    }
+
+    .calc-key.span-2 {
+      grid-column: span 2;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Refined botanical petals background -->
+  <canvas id="petal-canvas"></canvas>
+
+  <!-- Elegant champagne & metallic celebratory confetti -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <main class="timer-card">
+    <!-- Profile & Overall Streak Header -->
+    <header class="profile-header">
+      <div class="profile-input-container">
+        <label for="username-input" class="profile-label">Name:</label>
+        <input type="text" id="username-input" class="username-input" placeholder="Your name" maxlength="25"
+          autocomplete="off" />
+      </div>
+      <div class="header-actions">
+        <div class="overall-streak-badge" id="overall-streak-badge"
+          title="Overall daily study streak across any subject">
+          <span>🔥</span>
+          <span id="overall-streak-text">Overall 🔥 0</span>
+        </div>
+        <button id="open-calc-btn" class="tool-icon-btn" title="Open Quick Calculator" type="button">🧮</button>
+      </div>
+    </header>
+
+    <!-- Subjects Section -->
+    <section class="subjects-section">
+      <div class="subjects-label-row">
+        <span class="section-title">Select Subject</span>
+        <form id="add-subject-form" class="add-subject-form">
+          <input type="text" id="new-subject-input" class="new-subject-input" placeholder="New subject..."
+            maxlength="20" />
+          <button type="submit" class="add-subject-btn">+ Add</button>
+        </form>
+      </div>
+      <div id="subjects-list" class="subjects-list"></div>
+    </section>
+
+    <div class="active-subject-banner">
+      Studying: <span id="active-subject-name" class="active-subject-name">General</span>
+    </div>
+
+    <h1 id="timer-title">Study Timer</h1>
+    <div id="timer-display" class="timer-display">00:00:00</div>
+    <div class="button-group">
+      <button id="start-btn" class="control-btn">Start Studying</button>
+      <button id="pause-btn" class="control-btn">Pause</button>
+      <button id="stop-btn" class="control-btn">Stop</button>
+      <button id="restart-btn" class="control-btn">Restart</button>
+    </div>
+
+    <!-- Congratulations banner for beating previous session -->
+    <div id="congrats-banner" class="congrats-banner">
+      <span class="congrats-icon">🏆</span>
+      <span>You improved!</span>
+    </div>
+
+    <p id="result"></p>
+  </main>
+
+  <!-- Quick Calculator Modal (Timer continues running in background) -->
+  <div id="calc-modal" class="calc-modal-overlay">
+    <div class="calc-card">
+      <div class="calc-header">
+        <span class="calc-title">🧮 Calculator</span>
+        <button id="close-calc-btn" class="calc-close-btn" type="button" title="Close Calculator">✕</button>
+      </div>
+      <div id="calc-screen" class="calc-screen">0</div>
+      <div class="calc-keypad">
+        <button type="button" class="calc-key clear" data-val="C">C</button>
+        <button type="button" class="calc-key op" data-val="back">⌫</button>
+        <button type="button" class="calc-key op" data-val="%">%</button>
+        <button type="button" class="calc-key op" data-val="/">÷</button>
+
+        <button type="button" class="calc-key" data-val="7">7</button>
+        <button type="button" class="calc-key" data-val="8">8</button>
+        <button type="button" class="calc-key" data-val="9">9</button>
+        <button type="button" class="calc-key op" data-val="*">×</button>
+
+        <button type="button" class="calc-key" data-val="4">4</button>
+        <button type="button" class="calc-key" data-val="5">5</button>
+        <button type="button" class="calc-key" data-val="6">6</button>
+        <button type="button" class="calc-key op" data-val="-">−</button>
+
+        <button type="button" class="calc-key" data-val="1">1</button>
+        <button type="button" class="calc-key" data-val="2">2</button>
+        <button type="button" class="calc-key" data-val="3">3</button>
+        <button type="button" class="calc-key op" data-val="+">+</button>
+
+        <button type="button" class="calc-key span-2" data-val="0">0</button>
+        <button type="button" class="calc-key" data-val=".">.</button>
+        <button type="button" class="calc-key equals" data-val="=">=</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Date Helper Utilities ---
+    function getLocalDateString(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function getDaysDifference(dStr1, dStr2) {
+      const d1 = new Date(dStr1 + 'T00:00:00');
+      const d2 = new Date(dStr2 + 'T00:00:00');
+      const diffTime = d2 - d1;
+      return Math.round(diffTime / (1000 * 60 * 60 * 24));
+    }
+
+    // --- Profile Persistence ---
+    const usernameInput = document.getElementById('username-input');
+    const savedName = localStorage.getItem('studyUserName');
+    if (savedName) {
+      usernameInput.value = savedName;
+    }
+    usernameInput.addEventListener('input', () => {
+      localStorage.setItem('studyUserName', usernameInput.value.trim());
+    });
+
+    // --- Multiple Subjects & Streak Data Management ---
+    let subjects = [];
+    let selectedSubjectId = null;
+
+    const initialDefaultSubjects = [
+      { id: 'sub_math', name: 'Math', streak: 0, lastStudyDate: null, previousTime: 0 },
+      { id: 'sub_physics', name: 'Physics', streak: 0, lastStudyDate: null, previousTime: 0 }
+    ];
+
+    function loadSubjectsData() {
+      const stored = localStorage.getItem('studySubjects');
+      if (stored) {
+        try {
+          subjects = JSON.parse(stored);
+        } catch (e) {
+          subjects = initialDefaultSubjects;
+        }
+      } else {
+        subjects = initialDefaultSubjects;
+      }
+
+      if (!subjects || subjects.length === 0) {
+        subjects = [{ id: 'sub_gen', name: 'General', streak: 0, lastStudyDate: null, previousTime: 0 }];
+      }
+
+      const storedSelectedId = localStorage.getItem('selectedSubjectId');
+      if (storedSelectedId && subjects.some(s => s.id === storedSelectedId)) {
+        selectedSubjectId = storedSelectedId;
+      } else {
+        selectedSubjectId = subjects[0].id;
+      }
+    }
+
+    function saveSubjectsData() {
+      localStorage.setItem('studySubjects', JSON.stringify(subjects));
+      localStorage.setItem('selectedSubjectId', selectedSubjectId);
+    }
+
+    // --- Streaks Verification ---
+    const overallStreakTextEl = document.getElementById('overall-streak-text');
+    const subjectsListEl = document.getElementById('subjects-list');
+    const activeSubjectNameEl = document.getElementById('active-subject-name');
+
+    function checkAndVerifyAllStreaks() {
+      const todayStr = getLocalDateString(new Date());
+
+      // 1. Check Overall Streak
+      const overallLastDate = localStorage.getItem('lastStudyDate');
+      let overallStreak = parseInt(localStorage.getItem('studyStreakCount') || '0', 10);
+      if (overallLastDate) {
+        const daysDiff = getDaysDifference(overallLastDate, todayStr);
+        if (daysDiff > 1) {
+          overallStreak = 0;
+          localStorage.setItem('studyStreakCount', '0');
+        }
+      }
+      overallStreakTextEl.textContent = `Overall 🔥 ${overallStreak}`;
+
+      // 2. Check each Subject Streak
+      subjects.forEach(sub => {
+        if (sub.lastStudyDate) {
+          const daysDiff = getDaysDifference(sub.lastStudyDate, todayStr);
+          if (daysDiff > 1) {
+            sub.streak = 0;
+          }
+        }
+      });
+      saveSubjectsData();
+      renderSubjectsList();
+    }
+
+    function renderSubjectsList() {
+      subjectsListEl.innerHTML = '';
+      subjects.forEach(sub => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = `subject-chip ${sub.id === selectedSubjectId ? 'active' : ''}`;
+        chip.innerHTML = `${escapeHtml(sub.name)} <span class="subject-streak-tag">🔥 ${sub.streak}</span>`;
+        chip.addEventListener('click', () => {
+          if (timer) return; // Do not switch subject mid-timer
+          selectedSubjectId = sub.id;
+          saveSubjectsData();
+          renderSubjectsList();
+          updateActiveSubjectDisplay();
+        });
+        subjectsListEl.appendChild(chip);
+      });
+      updateActiveSubjectDisplay();
+    }
+
+    function updateActiveSubjectDisplay() {
+      const active = subjects.find(s => s.id === selectedSubjectId);
+      if (active) {
+        activeSubjectNameEl.textContent = active.name;
+      }
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    // Add new subject form
+    const addSubjectForm = document.getElementById('add-subject-form');
+    const newSubjectInput = document.getElementById('new-subject-input');
+
+    addSubjectForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = newSubjectInput.value.trim();
+      if (!name) return;
+
+      const newId = 'sub_' + Date.now();
+      subjects.push({
+        id: newId,
+        name: name,
+        streak: 0,
+        lastStudyDate: null,
+        previousTime: 0
+      });
+      selectedSubjectId = newId;
+      saveSubjectsData();
+      renderSubjectsList();
+      newSubjectInput.value = '';
+    });
+
+    // Initial setup
+    loadSubjectsData();
+    checkAndVerifyAllStreaks();
+
+    // --- Record study session in streaks (Overall & Subject) ---
+    function recordStudySession(currentSeconds) {
+      const todayStr = getLocalDateString(new Date());
+
+      // 1. Update Overall Streak
+      const overallLastDate = localStorage.getItem('lastStudyDate');
+      let overallStreak = parseInt(localStorage.getItem('studyStreakCount') || '0', 10);
+
+      if (!overallLastDate) {
+        overallStreak = 1;
+      } else {
+        const daysDiff = getDaysDifference(overallLastDate, todayStr);
+        if (daysDiff === 1) {
+          overallStreak += 1;
+        } else if (daysDiff > 1) {
+          overallStreak = 1;
+        }
+      }
+      localStorage.setItem('studyStreakCount', overallStreak.toString());
+      localStorage.setItem('lastStudyDate', todayStr);
+      overallStreakTextEl.textContent = `Overall 🔥 ${overallStreak}`;
+
+      // 2. Update Specific Subject Streak
+      const activeSub = subjects.find(s => s.id === selectedSubjectId);
+      if (activeSub) {
+        if (!activeSub.lastStudyDate) {
+          activeSub.streak = 1;
+        } else {
+          const daysDiff = getDaysDifference(activeSub.lastStudyDate, todayStr);
+          if (daysDiff === 1) {
+            activeSub.streak += 1;
+          } else if (daysDiff > 1) {
+            activeSub.streak = 1;
+          }
+        }
+        activeSub.lastStudyDate = todayStr;
+      }
+
+      saveSubjectsData();
+      renderSubjectsList();
+    }
+
+    // --- Timer Logic with LocalStorage session comparison ---
+    let seconds = 0;
+    let timer = null;
+    let isStopped = false;
+    let congratsTimeout = null;
+
+    const displayEl = document.getElementById('timer-display');
+    const resultEl = document.getElementById('result');
+    const congratsEl = document.getElementById('congrats-banner');
+    const startBtn = document.getElementById('start-btn');
+    const pauseBtn = document.getElementById('pause-btn');
+    const stopBtn = document.getElementById('stop-btn');
+    const restartBtn = document.getElementById('restart-btn');
+
+    function formatTime(totalSeconds) {
+      const hrs = Math.floor(totalSeconds / 3600);
+      const mins = Math.floor((totalSeconds % 3600) / 60);
+      const secs = totalSeconds % 60;
+      return [hrs, mins, secs]
+        .map(num => String(num).padStart(2, '0'))
+        .join(':');
+    }
+
+    startBtn.addEventListener('click', () => {
+      if (timer) return;
+
+      // If user previously stopped, start fresh session
+      if (isStopped) {
+        seconds = 0;
+        isStopped = false;
+        displayEl.textContent = '00:00:00';
+      }
+
+      resultEl.classList.remove('active');
+      timer = setInterval(() => {
+        seconds++;
+        displayEl.textContent = formatTime(seconds);
+      }, 1000);
+    });
+
+    pauseBtn.addEventListener('click', () => {
+      if (!timer) return;
+      clearInterval(timer);
+      timer = null;
+    });
+
+    stopBtn.addEventListener('click', () => {
+      if (isStopped) return;
+      const currentSeconds = seconds;
+      if (!timer && currentSeconds === 0) return;
+
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+      isStopped = true;
+
+      const activeSub = subjects.find(s => s.id === selectedSubjectId);
+      const subjectName = activeSub ? activeSub.name : 'Study Session';
+
+      // Update streaks
+      if (currentSeconds > 0) {
+        recordStudySession(currentSeconds);
+      }
+
+      // Format time text for summary message
+      const hours = Math.floor(currentSeconds / 3600);
+      const minutes = Math.floor((currentSeconds % 3600) / 60);
+      const remainingSeconds = currentSeconds % 60;
+
+      let timeText = '';
+      if (hours > 0) {
+        timeText = `${hours} hours, ${minutes} minutes and ${remainingSeconds} seconds`;
+      } else {
+        timeText = `${minutes} minutes and ${remainingSeconds} seconds`;
+      }
+
+      resultEl.textContent = `You studied ${subjectName} for ${timeText}`;
+      resultEl.classList.add('active');
+
+      // Compare new elapsed time to previous session for this subject
+      const prevSeconds = (activeSub && activeSub.previousTime) ? activeSub.previousTime : parseInt(localStorage.getItem('previousStudyTime') || '0', 10);
+
+      if (prevSeconds > 0 && currentSeconds > prevSeconds) {
+        // Trigger celebratory confetti burst and show congratulations message for 2 seconds
+        clearTimeout(congratsTimeout);
+        congratsEl.classList.add('show');
+        burstConfetti();
+
+        congratsTimeout = setTimeout(() => {
+          congratsEl.classList.remove('show');
+          stopConfetti();
+        }, 2000);
+      }
+
+      // Save new elapsed time as the previous time for this subject and globally
+      if (activeSub) {
+        activeSub.previousTime = currentSeconds;
+        saveSubjectsData();
+      }
+      localStorage.setItem('previousStudyTime', currentSeconds.toString());
+
+      // Freeze display at the stopped time (keep showing elapsed time, do NOT reset to 00:00:00)
+      displayEl.textContent = formatTime(currentSeconds);
+    });
+
+    restartBtn.addEventListener('click', () => {
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+      seconds = 0;
+      isStopped = false;
+      displayEl.textContent = '00:00:00';
+      resultEl.textContent = '';
+      resultEl.classList.remove('active');
+      clearTimeout(congratsTimeout);
+      congratsEl.classList.remove('show');
+      stopConfetti();
+      // Preserves the saved previous times and streaks in localStorage untouched
+    });
+
+    // --- On-Page Calculator Popup (Runs independently while timer keeps ticking) ---
+    const calcModal = document.getElementById('calc-modal');
+    const openCalcBtn = document.getElementById('open-calc-btn');
+    const closeCalcBtn = document.getElementById('close-calc-btn');
+    const calcScreen = document.getElementById('calc-screen');
+
+    let calcCurrent = '0';
+    let calcPrevious = null;
+    let calcOperator = null;
+    let calcResetOnNext = false;
+
+    openCalcBtn.addEventListener('click', () => {
+      calcModal.classList.add('open');
+    });
+
+    closeCalcBtn.addEventListener('click', () => {
+      calcModal.classList.remove('open');
+    });
+
+    calcModal.addEventListener('click', (e) => {
+      if (e.target === calcModal) {
+        calcModal.classList.remove('open');
+      }
+    });
+
+    function calculateResult(num1, num2, op) {
+      switch (op) {
+        case '+': return num1 + num2;
+        case '-': return num1 - num2;
+        case '*': return num1 * num2;
+        case '/': return num2 === 0 ? 'Error' : num1 / num2;
+        default: return num2;
+      }
+    }
+
+    document.querySelectorAll('.calc-key').forEach(button => {
+      button.addEventListener('click', () => {
+        const val = button.getAttribute('data-val');
+
+        if (val === 'C') {
+          calcCurrent = '0';
+          calcPrevious = null;
+          calcOperator = null;
+          calcResetOnNext = false;
+          calcScreen.textContent = '0';
+          return;
+        }
+
+        if (val === 'back') {
+          if (calcScreen.textContent === 'Error') {
+            calcCurrent = '0';
+          } else {
+            calcCurrent = calcCurrent.length > 1 ? calcCurrent.slice(0, -1) : '0';
+          }
+          calcScreen.textContent = calcCurrent;
+          return;
+        }
+
+        if (val === '%') {
+          const num = parseFloat(calcCurrent);
+          if (!isNaN(num)) {
+            calcCurrent = String(num / 100);
+            calcScreen.textContent = calcCurrent;
+          }
+          return;
+        }
+
+        if (['+', '-', '*', '/'].includes(val)) {
+          if (calcOperator && !calcResetOnNext && calcPrevious !== null) {
+            const res = calculateResult(parseFloat(calcPrevious), parseFloat(calcCurrent), calcOperator);
+            calcPrevious = String(res);
+            calcScreen.textContent = calcPrevious;
+          } else {
+            calcPrevious = calcCurrent;
+          }
+          calcOperator = val;
+          calcResetOnNext = true;
+          return;
+        }
+
+        if (val === '=') {
+          if (calcOperator && calcPrevious !== null) {
+            const res = calculateResult(parseFloat(calcPrevious), parseFloat(calcCurrent), calcOperator);
+            calcCurrent = String(res);
+            calcPrevious = null;
+            calcOperator = null;
+            calcResetOnNext = true;
+            calcScreen.textContent = calcCurrent;
+          }
+          return;
+        }
+
+        // Numbers and decimal
+        if (calcResetOnNext) {
+          calcCurrent = val === '.' ? '0.' : val;
+          calcResetOnNext = false;
+        } else {
+          if (val === '.') {
+            if (!calcCurrent.includes('.')) {
+              calcCurrent += '.';
+            }
+          } else {
+            calcCurrent = calcCurrent === '0' ? val : calcCurrent + val;
+          }
+        }
+        calcScreen.textContent = calcCurrent;
+      });
+    });
+
+    // --- Refined, Natural Botanical Blossom Petals Animation ---
+    const canvas = document.getElementById('petal-canvas');
+    const ctx = canvas.getContext('2d');
+
+    let width = (canvas.width = window.innerWidth);
+    let height = (canvas.height = window.innerHeight);
+
+    window.addEventListener('resize', () => {
+      width = canvas.width = confettiCanvas.width = window.innerWidth;
+      height = canvas.height = confettiCanvas.height = window.innerHeight;
+    });
+
+    // Natural, delicate translucent botanical blush tones
+    const petalColors = [
+      'rgba(235, 198, 206, 0.45)',
+      'rgba(240, 218, 212, 0.40)',
+      'rgba(224, 186, 196, 0.38)',
+      'rgba(242, 230, 232, 0.48)'
+    ];
+
+    const PETAL_COUNT = 22;
+    const petals = [];
+
+    class Petal {
+      constructor() {
+        this.reset(true);
+      }
+
+      reset(initial = false) {
+        this.x = Math.random() * width;
+        this.y = initial ? Math.random() * height : -20;
+        this.size = Math.random() * 5 + 6.5;
+        this.speedY = Math.random() * 0.5 + 0.55;
+        this.speedX = Math.random() * 0.35 + 0.15;
+        this.sway = Math.random() * Math.PI * 2;
+        this.swaySpeed = Math.random() * 0.012 + 0.006;
+        this.rotation = Math.random() * Math.PI * 2;
+        this.rotSpeed = (Math.random() - 0.5) * 0.012;
+        this.color = petalColors[Math.floor(Math.random() * petalColors.length)];
+      }
+
+      update() {
+        this.y += this.speedY;
+        this.sway += this.swaySpeed;
+        this.x += Math.sin(this.sway) * 0.6 + this.speedX;
+        this.rotation += this.rotSpeed;
+
+        if (this.y > height + 25 || this.x > width + 25) {
+          this.reset(false);
+        }
+      }
+
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rotation);
+        ctx.shadowColor = 'rgba(235, 198, 206, 0.2)';
+        ctx.shadowBlur = 4;
+        ctx.scale(Math.cos(this.sway), 1);
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.moveTo(0, -this.size);
+        ctx.bezierCurveTo(this.size * 0.68, -this.size * 0.65, this.size * 0.68, this.size * 0.65, 0, this.size);
+        ctx.bezierCurveTo(-this.size * 0.68, this.size * 0.65, -this.size * 0.68, -this.size * 0.65, 0, -this.size);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    for (let i = 0; i < PETAL_COUNT; i++) {
+      petals.push(new Petal());
+    }
+
+    function animatePetals() {
+      ctx.clearRect(0, 0, width, height);
+      for (let i = 0; i < petals.length; i++) {
+        petals[i].update();
+        petals[i].draw();
+      }
+      requestAnimationFrame(animatePetals);
+    }
+
+    animatePetals();
+
+    // --- Subtle, Elegant Metallic / Champagne Confetti Poppers ---
+    const confettiCanvas = document.getElementById('confetti-canvas');
+    const confettiCtx = confettiCanvas.getContext('2d');
+    confettiCanvas.width = window.innerWidth;
+    confettiCanvas.height = window.innerHeight;
+
+    let confettiParticles = [];
+    let confettiActive = false;
+
+    const confettiPalette = [
+      '#d4af37',
+      '#e6ca65',
+      '#c48b71',
+      '#b76e79',
+      '#5b8f88',
+      '#cbd5e1',
+      '#f5e6c8'
+    ];
+
+    class ConfettiPiece {
+      constructor(originX, originY) {
+        this.x = originX;
+        this.y = originY;
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = Math.random() * 8 + 3.5;
+        this.vx = Math.cos(angle) * velocity;
+        this.vy = Math.sin(angle) * velocity - 2.5;
+        this.gravity = 0.24;
+        this.drag = 0.96;
+        this.size = Math.random() * 5 + 4.5;
+        this.color = confettiPalette[Math.floor(Math.random() * confettiPalette.length)];
+        this.rotation = Math.random() * Math.PI * 2;
+        this.rotSpeed = (Math.random() - 0.5) * 0.18;
+        this.flip = Math.random() * Math.PI;
+        this.flipSpeed = Math.random() * 0.16 + 0.06;
+        this.isRect = Math.random() > 0.4;
+      }
+
+      update() {
+        this.vx *= this.drag;
+        this.vy *= this.drag;
+        this.vy += this.gravity;
+        this.x += this.vx;
+        this.y += this.vy;
+        this.rotation += this.rotSpeed;
+        this.flip += this.flipSpeed;
+      }
+
+      draw(c) {
+        c.save();
+        c.translate(this.x, this.y);
+        c.rotate(this.rotation);
+        c.scale(Math.cos(this.flip), 1);
+        c.fillStyle = this.color;
+        c.beginPath();
+        if (this.isRect) {
+          c.fillRect(-this.size / 2, -this.size / 3.5, this.size, this.size / 1.8);
+        } else {
+          c.arc(0, 0, this.size / 2.8, 0, Math.PI * 2);
+          c.fill();
+        }
+        c.restore();
+      }
+    }
+
+    function burstConfetti() {
+      const rect = congratsEl.getBoundingClientRect();
+      const originX = rect.left + rect.width / 2;
+      const originY = rect.top + rect.height / 2;
+
+      confettiParticles = [];
+      for (let i = 0; i < 70; i++) {
+        confettiParticles.push(new ConfettiPiece(originX, originY));
+      }
+      confettiActive = true;
+    }
+
+    function stopConfetti() {
+      confettiActive = false;
+      confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+      confettiParticles = [];
+    }
+
+    function animateConfetti() {
+      if (confettiActive && confettiParticles.length > 0) {
+        confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+        for (let i = 0; i < confettiParticles.length; i++) {
+          confettiParticles[i].update();
+          confettiParticles[i].draw(confettiCtx);
+        }
+      }
+      requestAnimationFrame(animateConfetti);
+    }
+
+    animateConfetti();
+  </script>
+</body>
+
+</html>
